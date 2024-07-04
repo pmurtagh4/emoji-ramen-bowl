@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Ramen Bowl Builder</title>
+    <style>
+        body {
+            display: flex;
+            font-family: Arial, sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1617421753170-46511a8d73fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwxfDB8MXxyYW5kb218MHx8cmFtZW4tcmVzdGF1cmFudHx8fHx8fDE2ODM2NTk0MjA&ixlib=rb-4.0.3&q=80&utm_campaign=api-credit&utm_medium=referral&utm_source=unsplash_source&w=1080');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 2;
+        }
+        #bowl-container {
+            width: 400px;
+            height: 400px;
+            background-color: rgba(240, 240, 240, 0.8);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+        #bowl-image {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #ingredients-in-bowl {
+            font-size: 50px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: 80%;
+            height: 80%;
+            z-index: 2;
+            position: absolute;
+        }
+        #ingredients {
+            font-size: 30px;
+            margin-top: 20px;
+        }
+        button {
+            font-size: 24px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #finish, #reset {
+            font-size: 24px;
+            margin-top: 20px;
+            padding: 10px 20px;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #finish { background-color: #4CAF50; }
+        #reset { background-color: #f44336; }
+        #result {
+            font-size: 24px;
+            margin-top: 20px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+        .history {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .history h2 {
+            margin-top: 0;
+        }
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div id="bowl-container">
+            <img id="bowl-image" src="https://res.cloudinary.com/dod6u4bjy/image/upload/v1720058319/kisspng-ramen-bowl-donburi-muji-noodle-5b11fa41148598.9947124515279048330841-removebg-preview_1.png" alt="Ramen Bowl">
+            <div id="ingredients-in-bowl"></div>
+        </div>
+        <div id="ingredients"></div>
+        <button id="finish">Finish Ramen</button>
+        <button id="reset">Reset Bowl</button>
+        <div id="result"></div>
+    </div>
+    <div class="history">
+        <h2>Ramen History</h2>
+        <div id="past-ramens"></div>
+    </div>
+
+    <script>
+        const ingredientsInBowl = document.getElementById('ingredients-in-bowl');
+        const ingredientsDiv = document.getElementById('ingredients');
+        const finishButton = document.getElementById('finish');
+        const resetButton = document.getElementById('reset');
+        const resultDiv = document.getElementById('result');
+        const pastRamensDiv = document.getElementById('past-ramens');
+        const bowlContainer = document.getElementById('bowl-container');
+        const ingredients = [
+            {emoji: '🥚', name: 'Egg', flavor: 'Rich'},
+            {emoji: '🍤', name: 'Shrimp', flavor: 'Seafood'},
+            {emoji: '🥓', name: 'Chashu', flavor: 'Savory'},
+            {emoji: '🌽', name: 'Corn', flavor: 'Sweet'},
+            {emoji: '🍄', name: 'Mushroom', flavor: 'Earthy'},
+            {emoji: '🥕', name: 'Carrot', flavor: 'Fresh'},
+            {emoji: '🧄', name: 'Garlic', flavor: 'Aromatic'}
+        ];
+        let bowlContents = [];
+        let isFinished = false;
+
+        ingredients.forEach(ingredient => {
+            const button = document.createElement('button');
+            button.textContent = ingredient.emoji;
+            button.onclick = () => addIngredient(ingredient);
+            ingredientsDiv.appendChild(button);
+        });
+
+        function addIngredient(ingredient) {
+            if (!isFinished) {
+                bowlContents.push(ingredient);
+                updateBowl();
+                shakeBowl();
+            }
+        }
+
+        function updateBowl() {
+            ingredientsInBowl.innerHTML = bowlContents.map(item => item.emoji).join('');
+        }
+
+        function shakeBowl() {
+            bowlContainer.classList.add('shake');
+            setTimeout(() => {
+                bowlContainer.classList.remove('shake');
+            }, 500);
+        }
+
+        finishButton.onclick = finishRamen;
+        resetButton.onclick = resetBowl;
+
+        function finishRamen() {
+            if (bowlContents.length === 0) {
+                resultDiv.textContent = "Please add some ingredients to your ramen first!";
+                return;
+            }
+
+            isFinished = true;
+            ingredientsDiv.classList.add('disabled');
+            
+            const ramenName = generateRamenName();
+            resultDiv.textContent = `Your creation: ${ramenName}`;
+
+            addToHistory(ramenName, bowlContents);
+        }
+
+        function generateRamenName() {
+            const flavors = bowlContents.map(item => item.flavor);
+            const uniqueFlavors = [...new Set(flavors)];
+            
+            let adjective = uniqueFlavors[Math.floor(Math.random() * uniqueFlavors.length)];
+            const mainIngredient = bowlContents[Math.floor(Math.random() * bowlContents.length)].name;
+            
+            const styles = ['Shoyu', 'Miso', 'Tonkotsu', 'Shio'];
+            const style = styles[Math.floor(Math.random() * styles.length)];
+
+            return `${adjective} ${mainIngredient} ${style} Ramen`;
+        }
+
+        function resetBowl() {
+            bowlContents = [];
+            updateBowl();
+            resultDiv.textContent = '';
+            isFinished = false;
+            ingredientsDiv.classList.remove('disabled');
+        }
+
+        function addToHistory(name, ingredients) {
+            const historyEntry = document.createElement('div');
+            historyEntry.innerHTML = `<strong>${name}</strong>: ${ingredients.map(item => item.emoji).join(' ')}`;
+            pastRamensDiv.appendChild(historyEntry);
+        }
+    </script>
+</body>
+</html>
